@@ -1,9 +1,9 @@
 # Implementation Plan
 
-- Status: Draft
+- Status: Approved
 - Source: [`spec.md`](spec.md)
 - Owner: Engineering
-- Approver: Engineering reviewer
+- Approver: Product owner
 
 Do not begin implementation until `intent.md` and `spec.md` are approved and this plan has been reviewed by an engineer.
 
@@ -96,6 +96,13 @@ Attach or link the following from the pull request:
 - The product owner must name a knowledgeable beekeeper to review educational content before the release candidate.
 - Decide whether the public release requires code signing before packaging work begins.
 - Final visual and audio assets must have documented creation or licensing provenance.
+
+## Approval
+
+- Decision: Approved
+- Approved by: Product owner
+- Date: 2026-09-16
+- Notes: Approved for implementation, beginning with the solution shell and performance tracer bullet.
 
 ## Completion Record
 
