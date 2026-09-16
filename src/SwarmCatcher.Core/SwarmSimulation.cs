@@ -4,8 +4,8 @@ namespace SwarmCatcher.Core;
 
 public sealed class SwarmSimulation
 {
-    private const float MinimumSpeed = 45;
-    private const float MaximumSpeed = 125;
+    private const float MinimumSpeed = 95;
+    private const float MaximumSpeed = 240;
 
     private readonly BeeState[] _bees;
     private readonly SimulationBounds _bounds;
@@ -69,7 +69,7 @@ public sealed class SwarmSimulation
             var tangent = new Vector2(-centerDirection.Y, centerDirection.X);
             float phase = bee.Id * 0.7548777f + _elapsedSeconds * 3.2f;
             var flutter = new Vector2(MathF.Cos(phase), MathF.Sin(phase * 1.37f));
-            Vector2 acceleration = centerDirection * 18 + tangent * 12 + flutter * 28;
+            Vector2 acceleration = centerDirection * 32 + tangent * 22 + flutter * 48;
             Vector2 velocity = LimitSpeed(bee.Velocity + acceleration * seconds);
             Vector2 position = bee.Position + velocity * seconds;
 
