@@ -74,6 +74,7 @@ Attach or link the following from the pull request:
 
 - Build, test, and format command results.
 - Performance report with hardware, resolution, duration, frame-time percentiles, rendered frames per second, and allocation data.
+- Development-machine tracer result: [`docs/performance-baseline.md`](docs/performance-baseline.md).
 - Seed values for deterministic acceptance scenarios.
 - Windows 10, Windows 11, DPI, keyboard, and accessibility check results.
 - Beekeeping content-review result.
