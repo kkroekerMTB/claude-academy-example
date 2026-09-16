@@ -31,12 +31,13 @@ Keep these files current when a decision changes. Flag conflicts between artifac
 
 ## Repository Commands
 
-Replace each placeholder when the repository gains an implementation. Agents must use the documented commands rather than inventing alternatives.
+Agents must use the documented commands rather than inventing alternatives.
 
-- Build: `TBD`
-- Test: `TBD`
-- Lint or static analysis: `TBD`
-- Run locally: `TBD`
+- Build: `dotnet build SwarmCatcher.sln -c Release`
+- Test: `dotnet test SwarmCatcher.sln -c Release --no-build`
+- Formatting check: `dotnet format SwarmCatcher.sln --verify-no-changes`
+- Run locally: `dotnet run --project src/SwarmCatcher.App/SwarmCatcher.App.csproj -c Debug`
+- Run the performance harness: `dotnet run --project tools/SwarmCatcher.Performance/SwarmCatcher.Performance.csproj -c Release`
 
 ## Completion Standard
 
