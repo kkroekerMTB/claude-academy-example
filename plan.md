@@ -38,8 +38,8 @@ Use fixed simulation steps and seeded randomness so gameplay results do not depe
 
 Each completed step gets its own focused commit after its checks pass.
 
-1. [ ] **Solution shell:** Create the four projects, establish dependency direction, add a minimal app window, add one passing test, and document working commands in `AGENTS.md`.
-2. [ ] **Performance tracer bullet:** Represent 5,000 uniquely identified bees, update them with a fixed step, draw them on one WPF surface, and display frame-time and allocation diagnostics. Run in Release x64 at 1920 × 1080.
+1. [x] **Solution shell:** Create the four projects, establish dependency direction, add a minimal app window, add one passing test, and document working commands in `AGENTS.md`.
+2. [x] **Performance tracer bullet:** Represent 5,000 uniquely identified bees, update them with a fixed step, draw them on one WPF surface, and display frame-time and allocation diagnostics. Run in Release x64 at 1920 × 1080.
 3. [ ] **Performance gate:** Profile the tracer bullet against a provisional minimum of a four-core x64 CPU, 8 GB RAM, and a DirectX 11-capable GPU. Record the actual machine. Confirm or revise the published minimum hardware before continuing.
 4. [ ] **Session and outcome rules:** Implement phase transitions, pause restoration, restart, bee-state invariants, queen uniqueness, capture percentage, and the queen-required success rule using test-first deterministic scenarios.
 5. [ ] **Swarm behavior:** Add separation, alignment, cohesion, bounded noise, the moving swarm center, safe bivouac selection, temporary bivouacs, and final settling. Verify seeded repeatability and reachable final placements.
