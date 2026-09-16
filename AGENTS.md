@@ -19,7 +19,7 @@ The committed artifacts are the handoffs and audit record for the work:
 5. The pull request records independent review. The agent that implements a change cannot approve it.
 6. Production signals and incidents feed new tests, eval cases, or a new `intent.md`.
 
-Keep these files current when a decision changes. Flag conflicts between artifacts instead of silently choosing one.
+Keep these files current when a decision changes. Flag conflicts between artifacts instead of silently choosing one. Commit frequently to materialize the full audit trail for each committed artifact as you work.
 
 ## Controls
 
