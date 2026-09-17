@@ -98,6 +98,104 @@ public sealed class SwarmSimulation
         }
     }
 
+    internal bool HasFallingBees
+    {
+        get
+        {
+            foreach (BeeState bee in _bees)
+            {
+                if (bee.Status == BeeStatus.Falling)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+    }
+
+    internal void ApplyBrushStroke(Vector2 start, Vector2 end, float radius)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(radius);
+        float radiusSquared = radius * radius;
+
+        for (int index = 0; index < _bees.Length; index++)
+        {
+            BeeState bee = _bees[index];
+            if (bee.Status != BeeStatus.Settled ||
+                DistanceSquaredToSegment(bee.Position, start, end) > radiusSquared)
+            {
+                continue;
+            }
+
+            float lateralVelocity = ((bee.Id * 37 % 49) - 24) * 0.9f;
+            float downwardVelocity = 85 + bee.Id % 35;
+            _bees[index] = bee with
+            {
+                Velocity = new Vector2(lateralVelocity, downwardVelocity),
+                Status = BeeStatus.Falling,
+            };
+        }
+    }
+
+    internal void AdvanceFalling(TimeSpan elapsed, CaptureBox box)
+    {
+        float seconds = (float)elapsed.TotalSeconds;
+        const float gravity = 420;
+
+        for (int index = 0; index < _bees.Length; index++)
+        {
+            BeeState bee = _bees[index];
+            if (bee.Status != BeeStatus.Falling)
+            {
+                continue;
+            }
+
+            Vector2 velocity = bee.Velocity + new Vector2(0, gravity * seconds);
+            Vector2 position = bee.Position + velocity * seconds;
+            BeeStatus status = bee.Status;
+
+            if (bee.Position.Y <= box.Top && position.Y >= box.Top && box.IsOverOpening(position.X))
+            {
+                position.Y = box.Top;
+                velocity = Vector2.Zero;
+                status = BeeStatus.Captured;
+            }
+            else if (position.Y > _bounds.Height)
+            {
+                status = BeeStatus.Departed;
+            }
+
+            _bees[index] = bee with { Position = position, Velocity = velocity, Status = status };
+        }
+    }
+
+    internal void DepartUncapturedBees()
+    {
+        for (int index = 0; index < _bees.Length; index++)
+        {
+            BeeState bee = _bees[index];
+            if (bee.Status is BeeStatus.Settled or BeeStatus.Falling)
+            {
+                _bees[index] = bee with { Status = BeeStatus.Departed };
+            }
+        }
+    }
+
+    private static float DistanceSquaredToSegment(Vector2 point, Vector2 start, Vector2 end)
+    {
+        Vector2 segment = end - start;
+        float segmentLengthSquared = segment.LengthSquared();
+        if (segmentLengthSquared < 0.001f)
+        {
+            return Vector2.DistanceSquared(point, start);
+        }
+
+        float position = Vector2.Dot(point - start, segment) / segmentLengthSquared;
+        Vector2 closest = start + segment * Math.Clamp(position, 0, 1);
+        return Vector2.DistanceSquared(point, closest);
+    }
+
     private static Vector2 NormalizeOrZero(Vector2 value)
     {
         return value.LengthSquared() > 0.001f ? Vector2.Normalize(value) : Vector2.Zero;

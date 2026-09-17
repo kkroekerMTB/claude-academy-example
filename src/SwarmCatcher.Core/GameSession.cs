@@ -11,6 +11,8 @@ public sealed class GameSession
     private int _seed;
     private TimeSpan _phaseElapsed;
     private GamePhase _phaseBeforePause;
+    private CaptureBox? _box;
+    private bool _sweepEnded;
 
     private GameSession(int beeCount, int seed, SimulationBounds bounds)
     {
@@ -23,6 +25,10 @@ public sealed class GameSession
     public GamePhase Phase { get; private set; } = GamePhase.Briefing;
 
     public SwarmSimulation Swarm { get; private set; }
+
+    public CaptureBox? Box => _box;
+
+    public CaptureResult? Result { get; private set; }
 
     public static GameSession Create(int beeCount, int seed, SimulationBounds bounds)
     {
@@ -40,11 +46,64 @@ public sealed class GameSession
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(elapsed, TimeSpan.Zero);
 
-        if (Phase != GamePhase.Swarming)
+        if (Phase == GamePhase.Swarming)
         {
-            return;
+            AdvanceSwarming(elapsed);
+        }
+        else if (Phase == GamePhase.Sweeping && _sweepEnded)
+        {
+            AdvanceFallingBees(elapsed);
+        }
+    }
+
+    public void ChooseBox()
+    {
+        RequirePhase(GamePhase.Bivouacked);
+        Phase = GamePhase.BoxPlacement;
+    }
+
+    public void PlaceBox(CaptureBox box)
+    {
+        RequirePhase(GamePhase.BoxPlacement);
+        if (!box.IsInside(_bounds))
+        {
+            throw new ArgumentOutOfRangeException(nameof(box), "The box must fit inside the game surface.");
         }
 
+        _box = box;
+    }
+
+    public void ChooseBrush()
+    {
+        RequirePhase(GamePhase.BoxPlacement);
+        if (_box is null)
+        {
+            throw new InvalidOperationException("Place the box before choosing the brush.");
+        }
+
+        Phase = GamePhase.Sweeping;
+    }
+
+    public void Sweep(Vector2 start, Vector2 end, float radius)
+    {
+        RequirePhase(GamePhase.Sweeping);
+        if (_sweepEnded)
+        {
+            throw new InvalidOperationException("The sweep has already ended.");
+        }
+
+        Swarm.ApplyBrushStroke(start, end, radius);
+    }
+
+    public void EndSweep()
+    {
+        RequirePhase(GamePhase.Sweeping);
+        _sweepEnded = true;
+        _phaseElapsed = TimeSpan.Zero;
+    }
+
+    private void AdvanceSwarming(TimeSpan elapsed)
+    {
         Swarm.Advance(elapsed);
         _phaseElapsed += elapsed;
 
@@ -55,6 +114,22 @@ public sealed class GameSession
             Phase = GamePhase.Bivouacked;
             _phaseElapsed = TimeSpan.Zero;
         }
+    }
+
+    private void AdvanceFallingBees(TimeSpan elapsed)
+    {
+        CaptureBox box = _box ?? throw new InvalidOperationException("A sweep requires a placed box.");
+        Swarm.AdvanceFalling(elapsed, box);
+        _phaseElapsed += elapsed;
+
+        if (Swarm.HasFallingBees && _phaseElapsed < TimeSpan.FromSeconds(2))
+        {
+            return;
+        }
+
+        Swarm.DepartUncapturedBees();
+        Result = OutcomeEvaluator.Evaluate(Swarm.Bees);
+        Phase = GamePhase.Resolved;
     }
 
     public void Pause()
@@ -80,6 +155,9 @@ public sealed class GameSession
         Swarm = SwarmSimulation.Create(_beeCount, _seed, _bounds);
         Phase = GamePhase.Briefing;
         _phaseElapsed = TimeSpan.Zero;
+        _box = null;
+        _sweepEnded = false;
+        Result = null;
     }
 
     private void RequirePhase(GamePhase expected)
