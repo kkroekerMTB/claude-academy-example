@@ -2,7 +2,7 @@
 
 - Candidate: Swarm Catcher 1.0.0 Windows x64
 - Date: 2026-09-17
-- Source checkpoint: `3b14ece`
+- Source checkpoint: `18c7fdc`
 - Status: Local candidate; not approved for public distribution
 
 ## Automated verification
@@ -25,8 +25,9 @@ A short automated-launch smoke run proved report generation. Its rendering measu
 
 The self-contained folder and versioned ZIP are produced under the ignored `artifacts/` directory. Rebuild the archive after any source change; record its final byte count and SHA-256 below.
 
-- ZIP: pending final rebuild after independent review
-- SHA-256: pending final rebuild after independent review
+- ZIP: `artifacts/SwarmCatcher-1.0.0-win-x64-18c7fdc.zip`
+- Size: 65,109,270 bytes
+- SHA-256: `C8EBC59532B262AE00214AB0CA9B24ABF0BD8C62287854021DFC81D059700DC3`
 
 The generated buzz is synthesized locally at runtime, and all other visuals are code-drawn WPF geometry. No third-party visual or audio assets are distributed.
 
