@@ -164,4 +164,27 @@ public sealed class GameSessionTests
         Assert.AreEqual(GamePhase.Sweeping, session.Phase);
         Assert.AreNotEqual(fallingBee.Position, advancedBee.Position);
     }
+
+    [TestMethod]
+    public void BoxClosesAutomaticallyWhenNoActiveBeesRemain()
+    {
+        GameSession session = GameSession.Create(
+            beeCount: 100,
+            seed: 42,
+            new SimulationBounds(800, 600));
+        session.Start();
+        session.Advance(TimeSpan.FromSeconds(6));
+        session.ChooseBox();
+        session.PlaceBox(new CaptureBox(left: 380, top: 360, width: 240, height: 180));
+        session.ChooseBrush();
+        session.Sweep(new Vector2(360, 180), new Vector2(640, 180), radius: 120);
+
+        for (int frame = 0; frame < 240 && session.Phase == GamePhase.Sweeping; frame++)
+        {
+            session.Advance(TimeSpan.FromSeconds(1.0 / 60));
+        }
+
+        Assert.IsTrue(session.IsBoxClosed);
+        Assert.AreEqual(GamePhase.Resolved, session.Phase);
+    }
 }

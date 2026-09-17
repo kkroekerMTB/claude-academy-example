@@ -41,11 +41,11 @@ Each completed step gets its own focused commit after its checks pass.
 1. [x] **Solution shell:** Create the four projects, establish dependency direction, add a minimal app window, add one passing test, and document working commands in `AGENTS.md`.
 2. [x] **Performance tracer bullet:** Represent 5,000 uniquely identified bees, update them with a fixed step, draw them on one WPF surface, and display frame-time and allocation diagnostics. Run in Release x64 at 1920 × 1080.
 3. [ ] **Performance gate:** Profile the tracer bullet against a provisional minimum of a four-core x64 CPU, 8 GB RAM, and a DirectX 11-capable GPU. Record the actual machine. Confirm or revise the published minimum hardware before continuing.
-4. [ ] **Session and outcome rules:** Implement phase transitions, pause restoration, restart, bee-state invariants, queen uniqueness, capture percentage, and the queen-required success rule using test-first deterministic scenarios.
-5. [ ] **Swarm behavior:** Add separation, alignment, cohesion, bounded noise, the moving swarm center, safe bivouac selection, temporary bivouacs, and final settling. Verify seeded repeatability and reachable final placements.
-6. [ ] **Player tools:** Implement inventory selection, keyboard equivalents, box placement and repositioning, brush-path sampling, falling trajectories, capture collision, missed-bee departure, and automatic box closure when sweeping ends.
-7. [ ] **Playable flow:** Connect briefing, swarming, bivouac, box placement, sweeping, resolution, retry, and exit into one complete session without diagnostic controls.
-8. [ ] **Learning and accessibility:** Add approved educational text, contextual lesson events, result recap, real-world safety wording, volume and mute controls, text scaling, high-contrast cues, and reduced motion.
+4. [x] **Session and outcome rules:** Implement phase transitions, pause restoration, restart, bee-state invariants, queen uniqueness, capture percentage, and the queen-required success rule using test-first deterministic scenarios.
+5. [x] **Swarm behavior:** Add separation, alignment, cohesion, bounded noise, the moving swarm center, safe bivouac selection, temporary bivouacs, and final settling. Verify seeded repeatability and reachable final placements.
+6. [x] **Player tools:** Implement inventory selection, keyboard equivalents, box placement and repositioning, brush-path sampling, falling trajectories, capture collision, missed-bee departure, and automatic box closure when sweeping ends.
+7. [x] **Playable flow:** Connect briefing, swarming, bivouac, box placement, sweeping, resolution, retry, and exit into one complete session without diagnostic controls.
+8. [x] **Learning and accessibility:** Add approved educational text, contextual lesson events, result recap, real-world safety wording, volume and mute controls, text scaling, high-contrast cues, and reduced motion.
 9. [ ] **Production verification:** Run the complete automated suite, 30-minute stability scenario, accessibility checks, Windows 10 and Windows 11 checks, DPI and monitor-edge checks, and beekeeping content review.
 10. [ ] **Release candidate:** Publish the self-contained x64 build, verify it on a clean supported Windows environment, archive the evidence, and obtain human production approval.
 
@@ -53,9 +53,9 @@ Each completed step gets its own focused commit after its checks pass.
 
 ### Automated Checks
 
-- [ ] Build: `dotnet build SwarmCatcher.sln -c Release`
-- [ ] Tests: `dotnet test SwarmCatcher.sln -c Release --no-build`
-- [ ] Formatting: `dotnet format SwarmCatcher.sln --verify-no-changes`
+- [x] Build: `dotnet build SwarmCatcher.sln -c Release`
+- [x] Tests: `dotnet test SwarmCatcher.sln -c Release --no-build`
+- [x] Formatting: `dotnet format SwarmCatcher.sln --verify-no-changes`
 - [ ] Performance: run the performance harness in Release x64 at 1920 × 1080 and save its frame-time, frame-rate, allocation, and hardware report.
 - [ ] Correctness: cover every session transition, every bee-state transition, seeded repeatability, queen uniqueness, capture boundaries, and restart reset behavior.
 
@@ -75,6 +75,7 @@ Attach or link the following from the pull request:
 - Build, test, and format command results.
 - Performance report with hardware, resolution, duration, frame-time percentiles, rendered frames per second, and allocation data.
 - Development-machine tracer result: [`docs/performance-baseline.md`](docs/performance-baseline.md).
+- Local release and verification record: [`docs/release-evidence.md`](docs/release-evidence.md).
 - Seed values for deterministic acceptance scenarios.
 - Windows 10, Windows 11, DPI, keyboard, and accessibility check results.
 - Beekeeping content-review result.
@@ -97,6 +98,8 @@ Attach or link the following from the pull request:
 - The product owner must name a knowledgeable beekeeper to review educational content before the release candidate.
 - Decide whether the public release requires code signing before packaging work begins.
 - Final visual and audio assets must have documented creation or licensing provenance.
+
+Implementation continued after the product owner accepted the development-machine tracer result and directed the agent to finish. This did not waive the minimum-hardware gate: step 3 remains a pre-release requirement and the stronger automated harness must be run in a foreground interactive desktop session on the agreed minimum machine.
 
 ## Approval
 

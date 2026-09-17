@@ -21,6 +21,7 @@ public sealed class GameSurface : FrameworkElement
         DashStyle = DashStyles.Dash,
     });
     private static readonly Pen HighContrastPen = Freeze(new Pen(Brushes.White, 4));
+    private static readonly Pen InvalidPlacementPen = Freeze(new Pen(Brushes.Red, 5));
     private static readonly Pen BrushHandlePen = Freeze(new Pen(BrushHandleBrush, 10));
 
     private readonly SwarmRenderer _swarmRenderer = new();
@@ -30,6 +31,7 @@ public sealed class GameSurface : FrameworkElement
     private Point _pointerPosition;
     private Vector2 _lastSweepPoint;
     private bool _isSweeping;
+    private bool _invalidPlacement;
     private BeeState[]? _previousFrame;
 
     public GameSurface()
@@ -50,6 +52,8 @@ public sealed class GameSurface : FrameworkElement
 
     public bool HasPlacedBox => _session?.Box is not null;
 
+    public bool InvalidPlacement => _invalidPlacement;
+
     public bool ReducedMotion { get; set; }
 
     public bool HighContrast { get; set; }
@@ -69,6 +73,7 @@ public sealed class GameSurface : FrameworkElement
         EnsureSession();
         _session!.Restart();
         _session.Start();
+        _invalidPlacement = false;
         CancelPointerInteraction();
         CapturePreviousFrame();
         NotifyStateChanged();
@@ -211,7 +216,19 @@ public sealed class GameSurface : FrameworkElement
         }
 
         Rect area = GetBoxPlacementArea();
-        drawingContext.DrawRoundedRectangle(null, HighContrast ? HighContrastPen : PlacementPen, area, 12, 12);
+        Pen areaPen = _invalidPlacement ? InvalidPlacementPen : HighContrast ? HighContrastPen : PlacementPen;
+        drawingContext.DrawRoundedRectangle(null, areaPen, area, 12, 12);
+        if (_invalidPlacement)
+        {
+            drawingContext.DrawLine(
+                InvalidPlacementPen,
+                new Point(_pointerPosition.X - 16, _pointerPosition.Y - 16),
+                new Point(_pointerPosition.X + 16, _pointerPosition.Y + 16));
+            drawingContext.DrawLine(
+                InvalidPlacementPen,
+                new Point(_pointerPosition.X + 16, _pointerPosition.Y - 16),
+                new Point(_pointerPosition.X - 16, _pointerPosition.Y + 16));
+        }
     }
 
     private void DrawBox(DrawingContext drawingContext)
@@ -252,8 +269,16 @@ public sealed class GameSurface : FrameworkElement
         const float width = 240;
         const float height = 180;
         Rect area = GetBoxPlacementArea();
-        float left = Math.Clamp((float)point.X - width / 2, (float)area.Left, (float)area.Right - width);
-        float top = Math.Clamp((float)point.Y, (float)area.Top, (float)area.Bottom - height);
+        float left = (float)point.X - width / 2;
+        float top = (float)point.Y;
+        _invalidPlacement = left < area.Left || left + width > area.Right ||
+            top < area.Top || top + height > area.Bottom;
+        if (_invalidPlacement)
+        {
+            NotifyStateChanged();
+            return;
+        }
+
         _session!.PlaceBox(new CaptureBox(left, top, width, height));
         NotifyStateChanged();
     }
@@ -261,13 +286,26 @@ public sealed class GameSurface : FrameworkElement
     private Rect GetBoxPlacementArea()
     {
         const double horizontalMargin = 20;
-        const double topMargin = 120;
         const double bottomMargin = 120;
+        double clusterBottom = 120;
+        if (_session is not null)
+        {
+            foreach (BeeState bee in _session.Swarm.Bees)
+            {
+                if (bee.Status == BeeStatus.Settled)
+                {
+                    clusterBottom = Math.Max(clusterBottom, bee.Position.Y + 15);
+                }
+            }
+        }
+
+        double bottom = Math.Max(180, ActualHeight - bottomMargin);
+        double top = Math.Min(clusterBottom, bottom - 180);
         return new Rect(
             horizontalMargin,
-            topMargin,
+            top,
             Math.Max(240, ActualWidth - horizontalMargin * 2),
-            Math.Max(180, ActualHeight - topMargin - bottomMargin));
+            bottom - top);
     }
 
     private void EnsureSession()

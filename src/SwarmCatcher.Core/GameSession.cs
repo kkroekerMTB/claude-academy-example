@@ -111,9 +111,7 @@ public sealed class GameSession
     public void EndSweep()
     {
         RequirePhase(GamePhase.Sweeping);
-        _sweepEnded = true;
-        _phaseElapsed = TimeSpan.Zero;
-        Swarm.ReleaseSettledBees();
+        BeginBoxClosure();
     }
 
     private void AdvanceSwarming(TimeSpan elapsed, float flightSpeedScale)
@@ -165,7 +163,12 @@ public sealed class GameSession
 
         if (!_sweepEnded)
         {
-            return;
+            if (Swarm.HasSettledBees || Swarm.HasFallingBees)
+            {
+                return;
+            }
+
+            BeginBoxClosure();
         }
 
         _phaseElapsed += elapsed;
@@ -177,6 +180,13 @@ public sealed class GameSession
 
         Result = OutcomeEvaluator.Evaluate(Swarm.Bees);
         Phase = GamePhase.Resolved;
+    }
+
+    private void BeginBoxClosure()
+    {
+        _sweepEnded = true;
+        _phaseElapsed = TimeSpan.Zero;
+        Swarm.ReleaseSettledBees();
     }
 
     public void Pause()

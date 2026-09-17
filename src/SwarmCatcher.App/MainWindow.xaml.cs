@@ -123,6 +123,8 @@ public sealed partial class MainWindow : Window, IDisposable
             GamePhase.Swarming => "The swarm is flying together while each bee moves independently. Watch where it settles.",
             GamePhase.TemporaryBivouac => LessonPresenter.TemporaryBivouac,
             GamePhase.Bivouacked => LessonPresenter.FinalBivouac,
+            GamePhase.BoxPlacement when Game.InvalidPlacement =>
+                "That spot is outside the outlined area. Place the entire box below the cluster and inside the outline.",
             GamePhase.BoxPlacement => LessonPresenter.BoxPlacement,
             GamePhase.Sweeping => LessonPresenter.Sweeping,
             GamePhase.Paused => "The game is paused. The swarm will wait for you.",

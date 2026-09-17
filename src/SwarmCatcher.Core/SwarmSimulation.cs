@@ -146,6 +146,22 @@ public sealed class SwarmSimulation
         }
     }
 
+    internal bool HasSettledBees
+    {
+        get
+        {
+            foreach (BeeState bee in _bees)
+            {
+                if (bee.Status == BeeStatus.Settled)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+    }
+
     internal void ApplyBrushStroke(Vector2 start, Vector2 end, float radius)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(radius);

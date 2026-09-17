@@ -15,10 +15,12 @@ public sealed class SwarmSurface : FrameworkElement
     private readonly SwarmRenderer _swarmRenderer = new();
     private readonly List<double> _frameTimes = new(capacity: 120_000);
     private SwarmSimulation? _simulation;
+    private BeeState[]? _previousFrame;
     private TimeSpan _lastRenderingTime;
     private TimeSpan _accumulatedSimulationTime;
     private double _measurementStartedAt;
     private long _measurementStartedBytes;
+    private long _runStartedBytes;
     private int _renderedFrames;
 
     public event Action<PerformanceMetrics>? MetricsUpdated;
@@ -34,10 +36,12 @@ public sealed class SwarmSurface : FrameworkElement
             width: Math.Max(1, (float)ActualWidth),
             height: Math.Max(1, (float)ActualHeight));
         _simulation = SwarmSimulation.Create(beeCount: 5_000, seed: 42, bounds);
+        _previousFrame = _simulation.Bees.ToArray();
         _lastRenderingTime = TimeSpan.Zero;
         _accumulatedSimulationTime = TimeSpan.Zero;
         _measurementStartedAt = 0;
-        _measurementStartedBytes = GC.GetTotalAllocatedBytes(precise: false);
+        _runStartedBytes = GC.GetTotalAllocatedBytes(precise: false);
+        _measurementStartedBytes = _runStartedBytes;
         _renderedFrames = 0;
         _frameTimes.Clear();
         _clock.Restart();
@@ -50,7 +54,7 @@ public sealed class SwarmSurface : FrameworkElement
         _clock.Stop();
 
         double duration = Math.Max(0.001, _clock.Elapsed.TotalSeconds);
-        long allocatedBytes = GC.GetTotalAllocatedBytes(precise: false) - _measurementStartedBytes;
+        long allocatedBytes = GC.GetTotalAllocatedBytes(precise: false) - _runStartedBytes;
         double[] sortedFrameTimes = _frameTimes.ToArray();
         Array.Sort(sortedFrameTimes);
         return new PerformanceReport(
@@ -83,8 +87,8 @@ public sealed class SwarmSurface : FrameworkElement
         _swarmRenderer.DrawBees(
             drawingContext,
             _simulation.Bees,
-            ReadOnlySpan<BeeState>.Empty,
-            interpolation: 1,
+            _previousFrame,
+            _accumulatedSimulationTime.TotalSeconds / SimulationStep.TotalSeconds,
             highContrast: false);
     }
 
@@ -117,6 +121,7 @@ public sealed class SwarmSurface : FrameworkElement
 
         while (_accumulatedSimulationTime >= SimulationStep)
         {
+            _simulation.Bees.CopyTo(_previousFrame);
             _simulation.Advance(SimulationStep);
             _accumulatedSimulationTime -= SimulationStep;
         }
