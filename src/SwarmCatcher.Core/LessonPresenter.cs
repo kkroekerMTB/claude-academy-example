@@ -14,7 +14,7 @@ public static class LessonPresenter
         "The swarm has settled into its final bivouac. Place the box below the cluster.";
 
     public const string BoxPlacement =
-        "Move the box so its open top is beneath the bees, then choose the brush.";
+        "The outline marks valid placement. Move the open box beneath the bees, then choose the brush.";
 
     public const string Sweeping =
         "Sweep gently through the cluster. Bees over the opening will fall into the box.";

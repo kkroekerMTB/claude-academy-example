@@ -35,6 +35,8 @@ public sealed class GameSession
 
     public bool ExperiencedTemporaryBivouac { get; private set; }
 
+    public bool IsBoxClosed => _sweepEnded;
+
     public static GameSession Create(int beeCount, int seed, SimulationBounds bounds)
     {
         return new GameSession(beeCount, seed, bounds);
@@ -61,7 +63,7 @@ public sealed class GameSession
         {
             AdvanceTemporaryBivouac(elapsed);
         }
-        else if (Phase == GamePhase.Sweeping && _sweepEnded)
+        else if (Phase == GamePhase.Sweeping)
         {
             AdvanceFallingBees(elapsed);
         }
@@ -111,6 +113,7 @@ public sealed class GameSession
         RequirePhase(GamePhase.Sweeping);
         _sweepEnded = true;
         _phaseElapsed = TimeSpan.Zero;
+        Swarm.ReleaseSettledBees();
     }
 
     private void AdvanceSwarming(TimeSpan elapsed, float flightSpeedScale)
@@ -159,14 +162,19 @@ public sealed class GameSession
     {
         CaptureBox box = _box ?? throw new InvalidOperationException("A sweep requires a placed box.");
         Swarm.AdvanceFalling(elapsed, box);
-        _phaseElapsed += elapsed;
 
-        if (Swarm.HasFallingBees && _phaseElapsed < TimeSpan.FromSeconds(2))
+        if (!_sweepEnded)
         {
             return;
         }
 
-        Swarm.DepartUncapturedBees();
+        _phaseElapsed += elapsed;
+
+        if (Swarm.HasFallingBees)
+        {
+            return;
+        }
+
         Result = OutcomeEvaluator.Evaluate(Swarm.Bees);
         Phase = GamePhase.Resolved;
     }

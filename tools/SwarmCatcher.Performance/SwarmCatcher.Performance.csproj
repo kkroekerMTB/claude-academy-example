@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\SwarmCatcher.Core\SwarmCatcher.Core.csproj" />
+    <ProjectReference Include="..\..\src\SwarmCatcher.App\SwarmCatcher.App.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

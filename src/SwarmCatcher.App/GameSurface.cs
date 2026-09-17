@@ -12,12 +12,10 @@ public sealed class GameSurface : FrameworkElement
     private static readonly Brush SkyBrush = Freeze(new LinearGradientBrush(
         Color.FromRgb(126, 190, 224), Color.FromRgb(225, 239, 205), 90));
     private static readonly Brush GrassBrush = Freeze(new SolidColorBrush(Color.FromRgb(78, 128, 66)));
-    private static readonly Brush BeeBrush = Freeze(new SolidColorBrush(Color.FromRgb(38, 31, 19)));
-    private static readonly Brush BeeHighlightBrush = Freeze(new SolidColorBrush(Color.FromRgb(244, 184, 42)));
-    private static readonly Brush HighContrastBeeBrush = Freeze(new SolidColorBrush(Colors.White));
     private static readonly Brush BoxBrush = Freeze(new SolidColorBrush(Color.FromRgb(173, 112, 61)));
     private static readonly Brush BoxOpeningBrush = Freeze(new SolidColorBrush(Color.FromRgb(52, 35, 25)));
     private static readonly Brush BrushHandleBrush = Freeze(new SolidColorBrush(Color.FromRgb(224, 199, 145)));
+    private static readonly Brush BrushHeadBrush = Freeze(new SolidColorBrush(Color.FromRgb(244, 184, 42)));
     private static readonly Pen PlacementPen = Freeze(new Pen(new SolidColorBrush(Color.FromArgb(190, 255, 255, 255)), 2)
     {
         DashStyle = DashStyles.Dash,
@@ -25,12 +23,14 @@ public sealed class GameSurface : FrameworkElement
     private static readonly Pen HighContrastPen = Freeze(new Pen(Brushes.White, 4));
     private static readonly Pen BrushHandlePen = Freeze(new Pen(BrushHandleBrush, 10));
 
+    private readonly SwarmRenderer _swarmRenderer = new();
     private GameSession? _session;
     private TimeSpan _lastRenderingTime;
     private TimeSpan _accumulatedSimulationTime;
     private Point _pointerPosition;
     private Vector2 _lastSweepPoint;
     private bool _isSweeping;
+    private BeeState[]? _previousFrame;
 
     public GameSurface()
     {
@@ -69,8 +69,8 @@ public sealed class GameSurface : FrameworkElement
         EnsureSession();
         _session!.Restart();
         _session.Start();
-        _isSweeping = false;
-        ReleaseMouseCapture();
+        CancelPointerInteraction();
+        CapturePreviousFrame();
         NotifyStateChanged();
     }
 
@@ -105,6 +105,7 @@ public sealed class GameSurface : FrameworkElement
         }
         else
         {
+            CancelPointerInteraction();
             _session.Pause();
         }
 
@@ -144,7 +145,8 @@ public sealed class GameSurface : FrameworkElement
         {
             PlaceBox(_pointerPosition);
         }
-        else if (_session?.Phase == GamePhase.Sweeping && _isSweeping)
+        else if (_session?.Phase == GamePhase.Sweeping && _isSweeping &&
+            e.LeftButton == MouseButtonState.Pressed)
         {
             Vector2 point = ToVector(_pointerPosition);
             _session.Sweep(_lastSweepPoint, point, BrushRadius);
@@ -165,6 +167,12 @@ public sealed class GameSurface : FrameworkElement
         }
     }
 
+    protected override void OnLostMouseCapture(MouseEventArgs e)
+    {
+        base.OnLostMouseCapture(e);
+        _isSweeping = false;
+    }
+
     protected override void OnRender(DrawingContext drawingContext)
     {
         drawingContext.DrawRectangle(HighContrast ? Brushes.Black : SkyBrush, null, new Rect(RenderSize));
@@ -182,36 +190,18 @@ public sealed class GameSurface : FrameworkElement
         }
 
         DrawPlacementArea(drawingContext);
-        DrawBees(drawingContext);
+        double interpolation = _accumulatedSimulationTime.TotalSeconds / SimulationStep.TotalSeconds;
+        _swarmRenderer.DrawBees(
+            drawingContext,
+            _session.Swarm.Bees,
+            _previousFrame,
+            interpolation,
+            HighContrast);
         DrawBox(drawingContext);
         DrawBrush(drawingContext);
     }
 
     private float BrushRadius => ReducedMotion ? 65 : 52;
-
-    private void DrawBees(DrawingContext drawingContext)
-    {
-        foreach (BeeState bee in _session!.Swarm.Bees)
-        {
-            if (bee.Status is BeeStatus.Captured or BeeStatus.Departed)
-            {
-                continue;
-            }
-
-            double size = bee.IsQueen ? 3.2 : 1.7;
-            Brush body = HighContrast ? HighContrastBeeBrush : BeeBrush;
-            drawingContext.DrawEllipse(body, null, new Point(bee.Position.X, bee.Position.Y), size * 1.6, size);
-            if (!HighContrast)
-            {
-                drawingContext.DrawEllipse(
-                    BeeHighlightBrush,
-                    null,
-                    new Point(bee.Position.X - size * 0.35, bee.Position.Y),
-                    size * 0.35,
-                    size * 0.8);
-            }
-        }
-    }
 
     private void DrawPlacementArea(DrawingContext drawingContext)
     {
@@ -220,7 +210,7 @@ public sealed class GameSurface : FrameworkElement
             return;
         }
 
-        var area = new Rect(10, 110, Math.Max(0, ActualWidth - 20), Math.Max(0, ActualHeight - 230));
+        Rect area = GetBoxPlacementArea();
         drawingContext.DrawRoundedRectangle(null, HighContrast ? HighContrastPen : PlacementPen, area, 12, 12);
     }
 
@@ -234,7 +224,7 @@ public sealed class GameSurface : FrameworkElement
         var body = new Rect(box.Left, box.Top, box.Width, box.Height);
         drawingContext.DrawRoundedRectangle(BoxBrush, HighContrast ? HighContrastPen : null, body, 6, 6);
 
-        bool closed = _session.Phase == GamePhase.Resolved;
+        bool closed = _session.IsBoxClosed;
         var opening = new Rect(box.Left + 10, box.Top - (closed ? 2 : 8), box.Width - 20, closed ? 8 : 16);
         drawingContext.DrawRoundedRectangle(BoxOpeningBrush, HighContrast ? HighContrastPen : null, opening, 4, 4);
     }
@@ -250,7 +240,7 @@ public sealed class GameSurface : FrameworkElement
         var handleEnd = new Point(_pointerPosition.X, _pointerPosition.Y);
         drawingContext.DrawLine(BrushHandlePen, handleStart, handleEnd);
         drawingContext.DrawEllipse(
-            HighContrast ? Brushes.White : BeeHighlightBrush,
+            HighContrast ? Brushes.White : BrushHeadBrush,
             HighContrast ? HighContrastPen : null,
             handleEnd,
             25,
@@ -261,10 +251,23 @@ public sealed class GameSurface : FrameworkElement
     {
         const float width = 240;
         const float height = 180;
-        float left = Math.Clamp((float)point.X - width / 2, 0, Math.Max(0, (float)ActualWidth - width));
-        float top = Math.Clamp((float)point.Y, 0, Math.Max(0, (float)ActualHeight - height));
+        Rect area = GetBoxPlacementArea();
+        float left = Math.Clamp((float)point.X - width / 2, (float)area.Left, (float)area.Right - width);
+        float top = Math.Clamp((float)point.Y, (float)area.Top, (float)area.Bottom - height);
         _session!.PlaceBox(new CaptureBox(left, top, width, height));
         NotifyStateChanged();
+    }
+
+    private Rect GetBoxPlacementArea()
+    {
+        const double horizontalMargin = 20;
+        const double topMargin = 120;
+        const double bottomMargin = 120;
+        return new Rect(
+            horizontalMargin,
+            topMargin,
+            Math.Max(240, ActualWidth - horizontalMargin * 2),
+            Math.Max(180, ActualHeight - topMargin - bottomMargin));
     }
 
     private void EnsureSession()
@@ -278,6 +281,7 @@ public sealed class GameSurface : FrameworkElement
             Math.Max(640, (float)ActualWidth),
             Math.Max(480, (float)ActualHeight));
         _session = GameSession.Create(5_000, seed: 42, bounds);
+        CapturePreviousFrame();
     }
 
     private void RenderFrame(object? sender, EventArgs e)
@@ -302,6 +306,7 @@ public sealed class GameSurface : FrameworkElement
 
         while (_accumulatedSimulationTime >= SimulationStep)
         {
+            CapturePreviousFrame();
             _session.Advance(SimulationStep, ReducedMotion ? 0.5f : 1);
             _accumulatedSimulationTime -= SimulationStep;
         }
@@ -318,6 +323,26 @@ public sealed class GameSurface : FrameworkElement
     {
         InvalidateVisual();
         StateChanged?.Invoke();
+    }
+
+    private void CapturePreviousFrame()
+    {
+        if (_session is null)
+        {
+            return;
+        }
+
+        _previousFrame ??= new BeeState[_session.Swarm.BeeCount];
+        _session.Swarm.Bees.CopyTo(_previousFrame);
+    }
+
+    private void CancelPointerInteraction()
+    {
+        _isSweeping = false;
+        if (IsMouseCaptured)
+        {
+            ReleaseMouseCapture();
+        }
     }
 
     private static Vector2 ToVector(Point point) => new((float)point.X, (float)point.Y);

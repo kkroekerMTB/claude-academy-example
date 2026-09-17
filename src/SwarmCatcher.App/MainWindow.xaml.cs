@@ -13,6 +13,7 @@ public sealed partial class MainWindow : Window, IDisposable
     public MainWindow()
     {
         InitializeComponent();
+        _buzzAudio.Volume = VolumeSlider.Value;
         Game.StateChanged += UpdatePresentation;
         Closed += (_, _) => Dispose();
         UpdatePresentation();
@@ -104,7 +105,12 @@ public sealed partial class MainWindow : Window, IDisposable
         if (IsLoaded && TextScale.SelectedItem is ComboBoxItem item &&
             double.TryParse(item.Tag?.ToString(), out double size))
         {
-            FontSize = size;
+            double scale = size / 16;
+            Resources["BodyTextSize"] = size;
+            Resources["HeadingTextSize"] = 22 * scale;
+            Resources["HelpTextSize"] = 13 * scale;
+            Resources["ResultTextSize"] = 30 * scale;
+            AccessibilityPanel.Width = 220 * Math.Min(scale, 1.65);
         }
     }
 

@@ -1,15 +1,29 @@
-﻿using System.Text;
 using System.Globalization;
+using System.IO;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Threading;
 
 namespace SwarmCatcher.Performance;
 
 public partial class MainWindow : Window
 {
+    private static readonly JsonSerializerOptions ReportJsonOptions = new() { WriteIndented = true };
+
+    private readonly string? _reportPath;
+    private readonly DispatcherTimer? _completionTimer;
+
     public MainWindow()
     {
         InitializeComponent();
+        (_reportPath, TimeSpan? duration) = ReadOptions(Environment.GetCommandLineArgs());
+        if (duration is not null)
+        {
+            _completionTimer = new DispatcherTimer { Interval = duration.Value };
+            _completionTimer.Tick += (_, _) => Close();
+        }
+
         Loaded += WindowLoaded;
         Closed += WindowClosed;
     }
@@ -18,12 +32,23 @@ public partial class MainWindow : Window
     {
         Swarm.MetricsUpdated += UpdateMetrics;
         Swarm.Start();
+        _completionTimer?.Start();
     }
 
     private void WindowClosed(object? sender, EventArgs e)
     {
-        Swarm.Stop();
+        _completionTimer?.Stop();
+        PerformanceReport report = Swarm.StopAndCreateReport();
         Swarm.MetricsUpdated -= UpdateMetrics;
+
+        if (_reportPath is not null)
+        {
+            string fullPath = Path.GetFullPath(_reportPath);
+            Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
+            File.WriteAllText(
+                fullPath,
+                JsonSerializer.Serialize(report, ReportJsonOptions));
+        }
     }
 
     private void UpdateMetrics(PerformanceMetrics metrics)
@@ -43,5 +68,27 @@ public partial class MainWindow : Window
         {
             Close();
         }
+    }
+
+    private static (string? ReportPath, TimeSpan? Duration) ReadOptions(string[] arguments)
+    {
+        string? reportPath = null;
+        TimeSpan? duration = null;
+
+        for (int index = 1; index < arguments.Length; index++)
+        {
+            if (arguments[index] == "--output" && index + 1 < arguments.Length)
+            {
+                reportPath = arguments[++index];
+            }
+            else if (arguments[index] == "--duration-minutes" && index + 1 < arguments.Length &&
+                double.TryParse(arguments[++index], CultureInfo.InvariantCulture, out double minutes) &&
+                minutes > 0)
+            {
+                duration = TimeSpan.FromMinutes(minutes);
+            }
+        }
+
+        return (reportPath, duration);
     }
 }

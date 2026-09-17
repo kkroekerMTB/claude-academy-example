@@ -89,6 +89,7 @@ public sealed class GameSessionTests
             end: new Vector2(620, 180),
             radius: 100);
         session.EndSweep();
+        Assert.IsTrue(session.IsBoxClosed);
         session.Advance(TimeSpan.FromSeconds(2));
 
         Assert.AreEqual(GamePhase.Resolved, session.Phase);
@@ -140,5 +141,27 @@ public sealed class GameSessionTests
         session.PlaceBox(finalBox);
 
         Assert.AreEqual(finalBox, session.Box);
+    }
+
+    [TestMethod]
+    public void BrushedBeesFallWhileTheSweepIsStillInProgress()
+    {
+        GameSession session = GameSession.Create(
+            beeCount: 100,
+            seed: 42,
+            new SimulationBounds(800, 600));
+        session.Start();
+        session.Advance(TimeSpan.FromSeconds(6));
+        session.ChooseBox();
+        session.PlaceBox(new CaptureBox(left: 380, top: 360, width: 240, height: 180));
+        session.ChooseBrush();
+        session.Sweep(new Vector2(380, 300), new Vector2(620, 300), radius: 100);
+        BeeState fallingBee = session.Swarm.Bees.ToArray().First(bee => bee.Status == BeeStatus.Falling);
+
+        session.Advance(TimeSpan.FromSeconds(0.1));
+
+        BeeState advancedBee = session.Swarm.Bees[fallingBee.Id];
+        Assert.AreEqual(GamePhase.Sweeping, session.Phase);
+        Assert.AreNotEqual(fallingBee.Position, advancedBee.Position);
     }
 }

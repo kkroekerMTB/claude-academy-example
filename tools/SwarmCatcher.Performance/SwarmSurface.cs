@@ -1,4 +1,5 @@
 using SwarmCatcher.Core;
+using SwarmCatcher.App;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Media;
@@ -8,11 +9,11 @@ namespace SwarmCatcher.Performance;
 public sealed class SwarmSurface : FrameworkElement
 {
     private static readonly Brush BackgroundBrush = CreateFrozenBrush(Color.FromRgb(16, 24, 32));
-    private static readonly Brush BeeBrush = CreateFrozenBrush(Color.FromRgb(246, 190, 43));
-    private static readonly Brush QueenBrush = CreateFrozenBrush(Color.FromRgb(255, 111, 45));
     private static readonly TimeSpan SimulationStep = TimeSpan.FromSeconds(1.0 / 60);
 
     private readonly Stopwatch _clock = new();
+    private readonly SwarmRenderer _swarmRenderer = new();
+    private readonly List<double> _frameTimes = new(capacity: 120_000);
     private SwarmSimulation? _simulation;
     private TimeSpan _lastRenderingTime;
     private TimeSpan _accumulatedSimulationTime;
@@ -38,14 +39,36 @@ public sealed class SwarmSurface : FrameworkElement
         _measurementStartedAt = 0;
         _measurementStartedBytes = GC.GetTotalAllocatedBytes(precise: false);
         _renderedFrames = 0;
+        _frameTimes.Clear();
         _clock.Restart();
         CompositionTarget.Rendering += RenderFrame;
     }
 
-    public void Stop()
+    public PerformanceReport StopAndCreateReport()
     {
         CompositionTarget.Rendering -= RenderFrame;
         _clock.Stop();
+
+        double duration = Math.Max(0.001, _clock.Elapsed.TotalSeconds);
+        long allocatedBytes = GC.GetTotalAllocatedBytes(precise: false) - _measurementStartedBytes;
+        double[] sortedFrameTimes = _frameTimes.ToArray();
+        Array.Sort(sortedFrameTimes);
+        return new PerformanceReport(
+            DateTimeOffset.UtcNow,
+            Environment.OSVersion.ToString(),
+            Environment.ProcessorCount,
+            GC.GetGCMemoryInfo().TotalAvailableMemoryBytes,
+            ActualWidth,
+            ActualHeight,
+            _simulation?.BeeCount ?? 0,
+            duration,
+            _frameTimes.Count,
+            _frameTimes.Count / duration,
+            _frameTimes.Count == 0 ? 0 : _frameTimes.Average(),
+            Percentile(sortedFrameTimes, 0.95),
+            Percentile(sortedFrameTimes, 0.99),
+            allocatedBytes / 1_024d / duration,
+            "SwarmCatcher.App.SwarmRenderer");
     }
 
     protected override void OnRender(DrawingContext drawingContext)
@@ -57,17 +80,12 @@ public sealed class SwarmSurface : FrameworkElement
             return;
         }
 
-        foreach (BeeState bee in _simulation.Bees)
-        {
-            double radius = bee.IsQueen ? 3.5 : 1.6;
-            Brush brush = bee.IsQueen ? QueenBrush : BeeBrush;
-            drawingContext.DrawEllipse(
-                brush,
-                null,
-                new Point(bee.Position.X, bee.Position.Y),
-                radius * 1.45,
-                radius);
-        }
+        _swarmRenderer.DrawBees(
+            drawingContext,
+            _simulation.Bees,
+            ReadOnlySpan<BeeState>.Empty,
+            interpolation: 1,
+            highContrast: false);
     }
 
     private static SolidColorBrush CreateFrozenBrush(Color color)
@@ -91,6 +109,7 @@ public sealed class SwarmSurface : FrameworkElement
         }
 
         TimeSpan elapsed = renderingEvent.RenderingTime - _lastRenderingTime;
+        _frameTimes.Add(elapsed.TotalMilliseconds);
         _lastRenderingTime = renderingEvent.RenderingTime;
         _accumulatedSimulationTime += elapsed > TimeSpan.FromMilliseconds(100)
             ? TimeSpan.FromMilliseconds(100)
@@ -126,5 +145,16 @@ public sealed class SwarmSurface : FrameworkElement
         _measurementStartedAt = _clock.Elapsed.TotalSeconds;
         _measurementStartedBytes = GC.GetTotalAllocatedBytes(precise: false);
         _renderedFrames = 0;
+    }
+
+    private static double Percentile(double[] sortedValues, double percentile)
+    {
+        if (sortedValues.Length == 0)
+        {
+            return 0;
+        }
+
+        int index = (int)Math.Ceiling(percentile * sortedValues.Length) - 1;
+        return sortedValues[Math.Clamp(index, 0, sortedValues.Length - 1)];
     }
 }
