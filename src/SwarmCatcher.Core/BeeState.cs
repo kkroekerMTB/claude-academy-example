@@ -6,4 +6,5 @@ public readonly record struct BeeState(
     int Id,
     bool IsQueen,
     Vector2 Position,
-    Vector2 Velocity);
+    Vector2 Velocity,
+    BeeStatus Status = BeeStatus.Flying);
