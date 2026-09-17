@@ -98,6 +98,21 @@ public sealed class SwarmSimulation
         }
     }
 
+    internal void TakeFlight()
+    {
+        for (int index = 0; index < _bees.Length; index++)
+        {
+            BeeState bee = _bees[index];
+            float angle = bee.Id * 2.3999632f;
+            float speed = MinimumSpeed + bee.Id % (int)(MaximumSpeed - MinimumSpeed);
+            _bees[index] = bee with
+            {
+                Velocity = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * speed,
+                Status = BeeStatus.Flying,
+            };
+        }
+    }
+
     internal bool HasFallingBees
     {
         get

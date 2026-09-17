@@ -4,6 +4,7 @@ public enum GamePhase
 {
     Briefing,
     Swarming,
+    TemporaryBivouac,
     Bivouacked,
     BoxPlacement,
     Sweeping,

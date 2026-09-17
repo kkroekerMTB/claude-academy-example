@@ -47,6 +47,31 @@ public sealed class GameSessionTests
     }
 
     [TestMethod]
+    public void OddSeedSwarmMovesOnFromTemporaryBivouacBeforeSettling()
+    {
+        GameSession session = GameSession.Create(
+            beeCount: 100,
+            seed: 43,
+            new SimulationBounds(800, 600));
+
+        session.Start();
+        session.Advance(TimeSpan.FromSeconds(3));
+
+        Assert.AreEqual(GamePhase.TemporaryBivouac, session.Phase);
+        Assert.AreEqual(BeeStatus.Settled, session.Swarm.Bees[0].Status);
+
+        session.Advance(TimeSpan.FromSeconds(2));
+
+        Assert.AreEqual(GamePhase.Swarming, session.Phase);
+        Assert.AreEqual(BeeStatus.Flying, session.Swarm.Bees[0].Status);
+
+        session.Advance(TimeSpan.FromSeconds(3));
+
+        Assert.AreEqual(GamePhase.Bivouacked, session.Phase);
+        Assert.AreEqual(BeeStatus.Settled, session.Swarm.Bees[0].Status);
+    }
+
+    [TestMethod]
     public void SweepIntoBoxResolvesWithCapturedQueenAndMajority()
     {
         GameSession session = GameSession.Create(

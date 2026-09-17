@@ -4,7 +4,9 @@ namespace SwarmCatcher.Core;
 
 public sealed class GameSession
 {
-    private static readonly TimeSpan SwarmingDuration = TimeSpan.FromSeconds(6);
+    private static readonly TimeSpan DirectFlightDuration = TimeSpan.FromSeconds(6);
+    private static readonly TimeSpan FlightLegDuration = TimeSpan.FromSeconds(3);
+    private static readonly TimeSpan TemporaryBivouacDuration = TimeSpan.FromSeconds(1.5);
 
     private readonly int _beeCount;
     private readonly SimulationBounds _bounds;
@@ -13,6 +15,7 @@ public sealed class GameSession
     private GamePhase _phaseBeforePause;
     private CaptureBox? _box;
     private bool _sweepEnded;
+    private bool _temporaryBivouacCompleted;
 
     private GameSession(int beeCount, int seed, SimulationBounds bounds)
     {
@@ -49,6 +52,10 @@ public sealed class GameSession
         if (Phase == GamePhase.Swarming)
         {
             AdvanceSwarming(elapsed);
+        }
+        else if (Phase == GamePhase.TemporaryBivouac)
+        {
+            AdvanceTemporaryBivouac(elapsed);
         }
         else if (Phase == GamePhase.Sweeping && _sweepEnded)
         {
@@ -107,13 +114,40 @@ public sealed class GameSession
         Swarm.Advance(elapsed);
         _phaseElapsed += elapsed;
 
-        if (_phaseElapsed >= SwarmingDuration)
+        bool usesTemporaryBivouac = (_seed & 1) == 1;
+        if (usesTemporaryBivouac && !_temporaryBivouacCompleted &&
+            _phaseElapsed >= FlightLegDuration)
+        {
+            Swarm.SettleAt(new Vector2(_bounds.Width * 0.36f, _bounds.Height * 0.34f));
+            Phase = GamePhase.TemporaryBivouac;
+            _phaseElapsed = TimeSpan.Zero;
+            return;
+        }
+
+        TimeSpan finalFlightDuration = usesTemporaryBivouac
+            ? FlightLegDuration
+            : DirectFlightDuration;
+        if (_phaseElapsed >= finalFlightDuration)
         {
             var anchor = new Vector2(_bounds.Width * 0.62f, _bounds.Height * 0.3f);
             Swarm.SettleAt(anchor);
             Phase = GamePhase.Bivouacked;
             _phaseElapsed = TimeSpan.Zero;
         }
+    }
+
+    private void AdvanceTemporaryBivouac(TimeSpan elapsed)
+    {
+        _phaseElapsed += elapsed;
+        if (_phaseElapsed < TemporaryBivouacDuration)
+        {
+            return;
+        }
+
+        Swarm.TakeFlight();
+        _temporaryBivouacCompleted = true;
+        Phase = GamePhase.Swarming;
+        _phaseElapsed = TimeSpan.Zero;
     }
 
     private void AdvanceFallingBees(TimeSpan elapsed)
@@ -157,6 +191,7 @@ public sealed class GameSession
         _phaseElapsed = TimeSpan.Zero;
         _box = null;
         _sweepEnded = false;
+        _temporaryBivouacCompleted = false;
         Result = null;
     }
 
