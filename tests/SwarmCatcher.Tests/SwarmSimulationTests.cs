@@ -56,4 +56,17 @@ public sealed class SwarmSimulationTests
 
         Assert.AreEqual(simulation.BeeCount, movedBeeCount);
     }
+
+    [TestMethod]
+    public void EqualSeedsProduceRepeatableMovement()
+    {
+        var bounds = new SimulationBounds(width: 1_280, height: 720);
+        SwarmSimulation first = SwarmSimulation.Create(beeCount: 500, seed: 17, bounds);
+        SwarmSimulation second = SwarmSimulation.Create(beeCount: 500, seed: 17, bounds);
+
+        first.Advance(TimeSpan.FromSeconds(1.0 / 60));
+        second.Advance(TimeSpan.FromSeconds(1.0 / 60));
+
+        CollectionAssert.AreEqual(first.Bees.ToArray(), second.Bees.ToArray());
+    }
 }

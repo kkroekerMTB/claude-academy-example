@@ -32,6 +32,18 @@ public sealed class OutcomeEvaluatorTests
         Assert.IsFalse(result.Succeeded);
     }
 
+    [TestMethod]
+    public void EvaluateFailsImmediatelyBelowFiftyPercent()
+    {
+        BeeState[] bees = CreateBees(beeCount: 5_000, capturedBeeCount: 2_499, queenId: 0);
+
+        CaptureResult result = OutcomeEvaluator.Evaluate(bees);
+
+        Assert.AreEqual(49.98, result.CapturedPercentage);
+        Assert.IsTrue(result.QueenCaptured);
+        Assert.IsFalse(result.Succeeded);
+    }
+
     private static BeeState[] CreateBees(int beeCount, int capturedBeeCount, int queenId)
     {
         var bees = new BeeState[beeCount];

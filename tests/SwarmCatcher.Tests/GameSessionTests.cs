@@ -123,4 +123,22 @@ public sealed class GameSessionTests
         Assert.AreEqual(0, session.Result?.CapturedCount);
         Assert.IsFalse(session.Result?.Succeeded);
     }
+
+    [TestMethod]
+    public void BoxCanBeRepositionedBeforeTheBrushIsChosen()
+    {
+        GameSession session = GameSession.Create(
+            beeCount: 100,
+            seed: 42,
+            new SimulationBounds(800, 600));
+        session.Start();
+        session.Advance(TimeSpan.FromSeconds(6));
+        session.ChooseBox();
+
+        session.PlaceBox(new CaptureBox(left: 100, top: 300, width: 200, height: 160));
+        var finalBox = new CaptureBox(left: 350, top: 320, width: 200, height: 160);
+        session.PlaceBox(finalBox);
+
+        Assert.AreEqual(finalBox, session.Box);
+    }
 }
