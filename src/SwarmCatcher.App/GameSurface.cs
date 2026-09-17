@@ -266,12 +266,13 @@ public sealed class GameSurface : FrameworkElement
 
     private void PlaceBox(Point point)
     {
-        const float width = 240;
-        const float height = 180;
         Rect area = GetBoxPlacementArea();
+        float width = (float)Math.Min(240, area.Width);
+        float height = (float)Math.Min(180, area.Height);
         float left = (float)point.X - width / 2;
         float top = (float)point.Y;
-        _invalidPlacement = left < area.Left || left + width > area.Right ||
+        _invalidPlacement = width < 180 || height < 120 ||
+            left < area.Left || left + width > area.Right ||
             top < area.Top || top + height > area.Bottom;
         if (_invalidPlacement)
         {
@@ -286,7 +287,7 @@ public sealed class GameSurface : FrameworkElement
     private Rect GetBoxPlacementArea()
     {
         const double horizontalMargin = 20;
-        const double bottomMargin = 120;
+        double bottomMargin = Math.Min(120, ActualHeight * 0.15);
         double clusterBottom = 120;
         if (_session is not null)
         {
@@ -299,13 +300,12 @@ public sealed class GameSurface : FrameworkElement
             }
         }
 
-        double bottom = Math.Max(180, ActualHeight - bottomMargin);
-        double top = Math.Min(clusterBottom, bottom - 180);
+        double bottom = Math.Max(clusterBottom, ActualHeight - bottomMargin);
         return new Rect(
             horizontalMargin,
-            top,
+            clusterBottom,
             Math.Max(240, ActualWidth - horizontalMargin * 2),
-            bottom - top);
+            bottom - clusterBottom);
     }
 
     private void EnsureSession()
