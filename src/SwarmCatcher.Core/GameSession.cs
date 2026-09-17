@@ -33,6 +33,8 @@ public sealed class GameSession
 
     public CaptureResult? Result { get; private set; }
 
+    public bool ExperiencedTemporaryBivouac { get; private set; }
+
     public static GameSession Create(int beeCount, int seed, SimulationBounds bounds)
     {
         return new GameSession(beeCount, seed, bounds);
@@ -45,13 +47,15 @@ public sealed class GameSession
         _phaseElapsed = TimeSpan.Zero;
     }
 
-    public void Advance(TimeSpan elapsed)
+    public void Advance(TimeSpan elapsed, float flightSpeedScale = 1)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(elapsed, TimeSpan.Zero);
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(flightSpeedScale, 0);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(flightSpeedScale, 1);
 
         if (Phase == GamePhase.Swarming)
         {
-            AdvanceSwarming(elapsed);
+            AdvanceSwarming(elapsed, flightSpeedScale);
         }
         else if (Phase == GamePhase.TemporaryBivouac)
         {
@@ -109,9 +113,9 @@ public sealed class GameSession
         _phaseElapsed = TimeSpan.Zero;
     }
 
-    private void AdvanceSwarming(TimeSpan elapsed)
+    private void AdvanceSwarming(TimeSpan elapsed, float flightSpeedScale)
     {
-        Swarm.Advance(elapsed);
+        Swarm.Advance(elapsed * flightSpeedScale);
         _phaseElapsed += elapsed;
 
         bool usesTemporaryBivouac = (_seed & 1) == 1;
@@ -119,6 +123,7 @@ public sealed class GameSession
             _phaseElapsed >= FlightLegDuration)
         {
             Swarm.SettleAt(new Vector2(_bounds.Width * 0.36f, _bounds.Height * 0.34f));
+            ExperiencedTemporaryBivouac = true;
             Phase = GamePhase.TemporaryBivouac;
             _phaseElapsed = TimeSpan.Zero;
             return;
@@ -193,6 +198,7 @@ public sealed class GameSession
         _sweepEnded = false;
         _temporaryBivouacCompleted = false;
         Result = null;
+        ExperiencedTemporaryBivouac = false;
     }
 
     private void RequirePhase(GamePhase expected)

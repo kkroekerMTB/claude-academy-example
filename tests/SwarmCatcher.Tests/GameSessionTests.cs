@@ -97,4 +97,30 @@ public sealed class GameSessionTests
         Assert.IsGreaterThanOrEqualTo(50, session.Result.Value.CapturedPercentage);
         Assert.IsTrue(session.Result.Value.Succeeded);
     }
+
+    [TestMethod]
+    public void BeesMissingTheBoxRecoverAndFlyOutOfView()
+    {
+        GameSession session = GameSession.Create(
+            beeCount: 100,
+            seed: 42,
+            new SimulationBounds(800, 600));
+        session.Start();
+        session.Advance(TimeSpan.FromSeconds(6));
+        session.ChooseBox();
+        session.PlaceBox(new CaptureBox(left: 0, top: 340, width: 100, height: 180));
+        session.ChooseBrush();
+        session.Sweep(new Vector2(420, 300), new Vector2(570, 300), radius: 100);
+        session.EndSweep();
+
+        session.Advance(TimeSpan.FromSeconds(0.5));
+
+        Assert.IsTrue(session.Swarm.Bees.ToArray().Any(bee => bee.Status == BeeStatus.Escaping));
+
+        session.Advance(TimeSpan.FromSeconds(2));
+
+        Assert.AreEqual(GamePhase.Resolved, session.Phase);
+        Assert.AreEqual(0, session.Result?.CapturedCount);
+        Assert.IsFalse(session.Result?.Succeeded);
+    }
 }

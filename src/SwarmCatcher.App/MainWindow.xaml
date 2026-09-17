@@ -1,12 +1,106 @@
-﻿<Window x:Class="SwarmCatcher.App.MainWindow"
+<Window x:Class="SwarmCatcher.App.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:SwarmCatcher.App"
-        mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
+        Title="Swarm Catcher" FontSize="16" WindowStyle="None" WindowState="Maximized"
+        ResizeMode="NoResize" Background="#10202A" KeyDown="Window_KeyDown">
+    <Window.Resources>
+        <Style TargetType="Button">
+            <Setter Property="MinHeight" Value="42" />
+            <Setter Property="MinWidth" Value="92" />
+            <Setter Property="Margin" Value="4" />
+            <Setter Property="Padding" Value="12,6" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style TargetType="CheckBox">
+            <Setter Property="Margin" Value="5" />
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+    </Window.Resources>
 
+    <Grid x:Name="MainRoot">
+        <local:GameSurface x:Name="Game" />
+
+        <Border VerticalAlignment="Top" Margin="18" Padding="14" MaxWidth="760"
+                HorizontalAlignment="Left" Background="#E616202A" CornerRadius="10"
+                BorderBrush="#FFF4B82A" BorderThickness="2">
+            <StackPanel>
+                <TextBlock Text="SWARM CATCHER" Foreground="#FFF4B82A"
+                           FontSize="22" FontWeight="Bold" />
+                <TextBlock x:Name="LessonText" Foreground="White" TextWrapping="Wrap"
+                           Margin="0,5,0,0" AutomationProperties.LiveSetting="Polite" />
+                <TextBlock Foreground="#FFDDE6EA" Margin="0,7,0,0" FontSize="13"
+                           TextWrapping="Wrap"
+                           Text="Keys: S start · 1 box · 2 brush · P or Esc pause · R restart · X exit" />
+            </StackPanel>
+        </Border>
+
+        <Border VerticalAlignment="Top" HorizontalAlignment="Right" Margin="18" Padding="10"
+                Background="#E616202A" CornerRadius="10" BorderBrush="#80FFFFFF" BorderThickness="1">
+            <StackPanel Width="220">
+                <WrapPanel HorizontalAlignment="Right">
+                    <Button x:Name="PauseButton" Content="Pause [P]" Click="Pause_Click" />
+                    <Button Content="Exit [X]" Click="Exit_Click" />
+                </WrapPanel>
+                <Expander Header="Accessibility and audio" Foreground="White" Margin="4">
+                    <StackPanel Margin="4">
+                        <CheckBox x:Name="HighContrastCheck" Content="High contrast cues"
+                                  Checked="HighContrast_Changed" Unchecked="HighContrast_Changed" />
+                        <CheckBox x:Name="ReducedMotionCheck" Content="Reduced motion"
+                                  Checked="ReducedMotion_Changed" Unchecked="ReducedMotion_Changed" />
+                        <CheckBox x:Name="MuteCheck" Content="Mute buzz"
+                                  Checked="Audio_Changed" Unchecked="Audio_Changed" />
+                        <TextBlock Text="Buzz volume" Foreground="White" Margin="5,5,5,0" />
+                        <Slider x:Name="VolumeSlider" Minimum="0" Maximum="1" Value="0.28"
+                                TickFrequency="0.1" ValueChanged="Audio_Changed"
+                                AutomationProperties.Name="Buzz volume" />
+                        <TextBlock Text="Text size" Foreground="White" Margin="5,7,5,0" />
+                        <ComboBox x:Name="TextScale" SelectedIndex="0" Margin="5"
+                                  SelectionChanged="TextScale_Changed">
+                            <ComboBoxItem Content="100%" Tag="16" />
+                            <ComboBoxItem Content="150%" Tag="24" />
+                            <ComboBoxItem Content="200%" Tag="32" />
+                        </ComboBox>
+                    </StackPanel>
+                </Expander>
+            </StackPanel>
+        </Border>
+
+        <Border VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="18" Padding="8"
+                Background="#E616202A" CornerRadius="12" BorderBrush="#FFF4B82A" BorderThickness="2">
+            <StackPanel Orientation="Horizontal">
+                <Button x:Name="StartButton" Content="Start [S]" Click="Start_Click" />
+                <Button x:Name="BoxButton" Content="Cardboard box [1]" Click="Box_Click" />
+                <Button x:Name="BrushButton" Content="Bee brush [2]" Click="Brush_Click" />
+                <Button Content="Restart [R]" Click="Restart_Click" />
+            </StackPanel>
+        </Border>
+
+        <Border x:Name="ResultPanel" Visibility="Collapsed" HorizontalAlignment="Center"
+                VerticalAlignment="Center" MaxWidth="650" Padding="28" Background="#F016202A"
+                CornerRadius="14" BorderBrush="#FFF4B82A" BorderThickness="3">
+            <StackPanel>
+                <TextBlock x:Name="ResultTitle" FontSize="30" FontWeight="Bold"
+                           Foreground="#FFF4B82A" TextAlignment="Center" />
+                <TextBlock x:Name="ResultText" Foreground="White" TextWrapping="Wrap"
+                           TextAlignment="Center" Margin="0,12" />
+                <Button Content="Catch another swarm [R]" HorizontalAlignment="Center"
+                        Click="Restart_Click" />
+            </StackPanel>
+        </Border>
+
+        <Border x:Name="PausePanel" Visibility="Collapsed" HorizontalAlignment="Center"
+                VerticalAlignment="Center" Padding="30" Background="#F016202A"
+                CornerRadius="14" BorderBrush="White" BorderThickness="3">
+            <StackPanel>
+                <TextBlock Text="Paused" FontSize="32" FontWeight="Bold" Foreground="White"
+                           HorizontalAlignment="Center" />
+                <TextBlock Text="Press P or Esc to continue." Foreground="White" Margin="0,8,0,12" />
+                <WrapPanel HorizontalAlignment="Center">
+                    <Button Content="Resume" Click="Pause_Click" />
+                    <Button Content="Exit" Click="Exit_Click" />
+                </WrapPanel>
+            </StackPanel>
+        </Border>
     </Grid>
 </Window>

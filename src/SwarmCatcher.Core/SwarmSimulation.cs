@@ -119,7 +119,7 @@ public sealed class SwarmSimulation
         {
             foreach (BeeState bee in _bees)
             {
-                if (bee.Status == BeeStatus.Falling)
+                if (bee.Status is BeeStatus.Falling or BeeStatus.Escaping)
                 {
                     return true;
                 }
@@ -161,22 +161,32 @@ public sealed class SwarmSimulation
         for (int index = 0; index < _bees.Length; index++)
         {
             BeeState bee = _bees[index];
-            if (bee.Status != BeeStatus.Falling)
+            if (bee.Status is not BeeStatus.Falling and not BeeStatus.Escaping)
             {
                 continue;
             }
 
-            Vector2 velocity = bee.Velocity + new Vector2(0, gravity * seconds);
+            Vector2 velocity = bee.Status == BeeStatus.Falling
+                ? bee.Velocity + new Vector2(0, gravity * seconds)
+                : bee.Velocity + new Vector2(0, -18 * seconds);
             Vector2 position = bee.Position + velocity * seconds;
             BeeStatus status = bee.Status;
 
-            if (bee.Position.Y <= box.Top && position.Y >= box.Top && box.IsOverOpening(position.X))
+            if (bee.Status == BeeStatus.Falling && bee.Position.Y <= box.Top && position.Y >= box.Top &&
+                box.IsOverOpening(position.X))
             {
                 position.Y = box.Top;
                 velocity = Vector2.Zero;
                 status = BeeStatus.Captured;
             }
-            else if (position.Y > _bounds.Height)
+            else if (bee.Status == BeeStatus.Falling && bee.Position.Y <= box.Top && position.Y >= box.Top)
+            {
+                float direction = position.X < box.Left + box.Width / 2 ? -1 : 1;
+                velocity = new Vector2(direction * (160 + bee.Id % 70), -80 - bee.Id % 50);
+                status = BeeStatus.Escaping;
+            }
+            else if (position.X < 0 || position.X > _bounds.Width ||
+                position.Y < 0 || position.Y > _bounds.Height)
             {
                 status = BeeStatus.Departed;
             }
@@ -190,7 +200,7 @@ public sealed class SwarmSimulation
         for (int index = 0; index < _bees.Length; index++)
         {
             BeeState bee = _bees[index];
-            if (bee.Status is BeeStatus.Settled or BeeStatus.Falling)
+            if (bee.Status is BeeStatus.Settled or BeeStatus.Falling or BeeStatus.Escaping)
             {
                 _bees[index] = bee with { Status = BeeStatus.Departed };
             }
