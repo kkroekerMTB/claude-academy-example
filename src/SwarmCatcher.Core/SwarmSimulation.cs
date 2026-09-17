@@ -78,6 +78,26 @@ public sealed class SwarmSimulation
         }
     }
 
+    internal void SettleAt(Vector2 anchor)
+    {
+        const float goldenAngle = 2.3999632f;
+        float clusterRadius = MathF.Min(_bounds.Width, _bounds.Height) * 0.1f;
+
+        for (int index = 0; index < _bees.Length; index++)
+        {
+            BeeState bee = _bees[index];
+            float distance = MathF.Sqrt((index + 0.5f) / _bees.Length) * clusterRadius;
+            float angle = index * goldenAngle;
+            var offset = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * distance;
+            _bees[index] = bee with
+            {
+                Position = anchor + offset,
+                Velocity = Vector2.Zero,
+                Status = BeeStatus.Settled,
+            };
+        }
+    }
+
     private static Vector2 NormalizeOrZero(Vector2 value)
     {
         return value.LengthSquared() > 0.001f ? Vector2.Normalize(value) : Vector2.Zero;
